@@ -177,6 +177,84 @@ async function insertBooks() {
 
 // Run the function
 insertBooks().catch(console.error);
+// queries.js
+use("plp_bookstore");
+
+// ✅ Basic Queries
+// 1. Find all books in a specific genre
+db.books.find({ genre: "Self-Help" });
+
+// 2. Find books published after a certain year
+db.books.find({ published_year: { $gt: 2015 } });
+
+// 3. Find books by a specific author
+db.books.find({ author: "James Clear" });
+
+// 4. Update the price of a specific book
+db.books.updateOne({ title: "Dune" }, { $set: { price: 900 } });
+
+// 5. Delete a book by its title
+db.books.deleteOne({ title: "The Alchemist" });
+
+
+// ✅ Advanced Queries
+// 6. Books that are in stock and published after 2010
+db.books.find({ in_stock: true, published_year: { $gt: 2010 } });
+
+// 7. Projection - show only title, author, and price
+db.books.find({}, { _id: 0, title: 1, author: 1, price: 1 });
+
+// 8. Sorting by price ascending
+db.books.find().sort({ price: 1 });
+
+// 9. Sorting by price descending
+db.books.find().sort({ price: -1 });
+
+// 10. Pagination (5 per page)
+db.books.find().skip(0).limit(5);  // Page 1
+db.books.find().skip(5).limit(5);  // Page 2
+
+
+// ✅ Aggregation Pipelines
+// 11. Average price by genre
+db.books.aggregate([
+  { $group: { _id: "$genre", avgPrice: { $avg: "$price" } } },
+  { $sort: { avgPrice: -1 } }
+]);
+
+// 12. Author with the most books
+db.books.aggregate([
+  { $group: { _id: "$author", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+  { $limit: 1 }
+]);
+
+// 13. Group books by publication decade
+db.books.aggregate([
+  {
+    $project: {
+      decade: {
+        $concat: [
+          { $toString: { $subtract: [{ $subtract: ["$published_year", { $mod: ["$published_year", 10] }] }, 0] } },
+          "s"
+        ]
+      }
+    }
+  },
+  { $group: { _id: "$decade", totalBooks: { $sum: 1 } } },
+  { $sort: { _id: 1 } }
+]);
+
+
+// ✅ Indexing
+// 14. Create an index on the title field
+db.books.createIndex({ title: 1 });
+
+// 15. Create a compound index on author and published_year
+db.books.createIndex({ author: 1, published_year: -1 });
+
+// 16. Check performance with explain()
+db.books.find({ title: "Dune" }).explain("executionStats");
 
 /*
  * Example MongoDB queries you can try after running this script:
